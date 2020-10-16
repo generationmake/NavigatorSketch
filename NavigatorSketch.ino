@@ -46,7 +46,7 @@ void onGprmcUpdate(nmea::RmcData const);
 
 ArduinoNmeaParser parser(onGprmcUpdate);
 DogGraphicDisplay DOG;
-volatile int display_screen=0;
+volatile unsigned int display_screen=0;
 volatile bool nav_flag=0;
 volatile float global_longitude=0.0;
 volatile float global_latitude=0.0;
@@ -55,6 +55,19 @@ volatile float global_latitude=0.0;
 /**************************************************************************************
  * SETUP/LOOP
  **************************************************************************************/
+
+const char *maidenhead(float lon, float lat)
+{
+  static char locator[7]="000000";  // create buffer
+  int x, y;
+  locator[0]=(int)(lon+180.0)/20+65;
+  locator[1]=(int)(lat+90.0)/10+65;
+  locator[2]=((int)(lon+180.0)%20)/2+48;
+  locator[3]=(int)(lat+90.0)%10+48;
+  locator[4]=(int)(((lon/2+90.0)-(int)(lon/2+90.0))*24.0)+65;
+  locator[5]=(int)(((lat+90.0)-(int)(lat+90.0))*24.0)+65;
+  return locator;
+}
 
 // read the buttons
 int read_LCD_buttons()
@@ -100,14 +113,18 @@ void loop() {
   {
     case btnUP:               // up
       {
-        display_screen=1;
+        if(display_screen<2) display_screen++;
+        else display_screen=0;
         DOG.clear();  //clear whole display
+        delay(300);
         break;
       }
     case btnDOWN:               // down
       {
-        display_screen=0;
+        if(display_screen>0) display_screen--;
+        else display_screen=3;
         DOG.clear();  //clear whole display
+        delay(300);
         break;
       }
     case btnRIGHT:               // down
@@ -124,6 +141,10 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
+    if(display_screen==2)
+    {
+       DOG.string(70,0,UBUNTUMONO_B_16,maidenhead(global_longitude,global_latitude));    
+    }
     if(display_screen==1)
     {
       NavPoint p2(global_latitude, global_longitude);
@@ -159,7 +180,7 @@ void onGprmcUpdate(nmea::RmcData const rmc)
   Serial.print(rmc.time_utc.microsecond);
   if(rmc.time_utc.hour>=0)
   {
-    if(display_screen==0)
+    if((display_screen==0)||(display_screen==2))
     {
       sprintf(buf, "%02i:%02i:%02i",rmc.time_utc.hour,rmc.time_utc.minute,rmc.time_utc.second);
       DOG.string(0,2,UBUNTUMONO_B_16,buf); // print time in line 2 left
@@ -191,12 +212,15 @@ void onGprmcUpdate(nmea::RmcData const rmc)
       String course(rmc.course);
       DOG.string(100,2,DENSE_NUMBERS_8,course.c_str()); // print speed in line 2 right
     }
-    if(display_screen==1)
+    if((display_screen==1)||(display_screen==2))
     {
       sprintf(buf, "%03.6f",rmc.longitude);
       DOG.string(0,0,DENSE_NUMBERS_8,buf); // print position in line 0 
       sprintf(buf, "%03.6f",rmc.latitude);
       DOG.string(0,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+    }
+    if(display_screen==1)
+    {
       sprintf(buf, "%03.2f",rmc.speed);
       DOG.string(70,0,DENSE_NUMBERS_8,buf); // print position in line 0 
       sprintf(buf, "%03.2f",rmc.speed*3.6);
