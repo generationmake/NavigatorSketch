@@ -147,15 +147,16 @@ void loop() {
     }
     if(display_screen==1)
     {
-      NavPoint p2(global_latitude, global_longitude);
+      NavPoint pos(global_latitude, global_longitude);
       sprintf(buf, "%03.6f",dest.getLongitude());
       DOG.string(0,2,DENSE_NUMBERS_8,buf); // print position in line 0 
       sprintf(buf, "%03.6f",dest.getLatitude());
       DOG.string(0,3,DENSE_NUMBERS_8,buf); // print position in line 0 
       // distance
-      float distance = dest.calculateDistance(p2);
+      float distance = pos.calculateDistance(dest);
       // bearing
-      float bearing = dest.calculateBearing(p2);
+      float bearing = pos.calculateBearing(dest);
+      if(bearing<0) bearing+=360.0; // bring bearing to 0 to 360 degrees, just like in NMEA dataset
       sprintf(buf, "%03.6f",bearing);
       DOG.string(70,2,DENSE_NUMBERS_8,buf); // print position in line 0 
       sprintf(buf, "%03.6f",distance);
