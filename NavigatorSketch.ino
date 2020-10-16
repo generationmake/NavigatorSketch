@@ -23,6 +23,16 @@
 
 #define BACKLIGHTPIN 10
 
+// define some values used by the panel and buttons
+#define btnRIGHT  0
+#define btnUP     1
+#define btnDOWN   2
+#define btnLEFT   3
+#define btnSELECT 4
+#define btnNONE   5
+
+
+
 /**************************************************************************************
  * FUNCTION DECLARATION
  **************************************************************************************/
@@ -35,10 +45,32 @@ void onGprmcUpdate(nmea::RmcData const);
 
 ArduinoNmeaParser parser(onGprmcUpdate);
 DogGraphicDisplay DOG;
+volatile int display_screen=0;
+volatile bool nav_flag=0;
+volatile float global_longitude=0.0;
+volatile float global_latitude=0.0;
+
 
 /**************************************************************************************
  * SETUP/LOOP
  **************************************************************************************/
+
+// read the buttons
+int read_LCD_buttons()
+{
+  int adc_key_in = analogRead(5);      // read the value from the sensor 
+  // my buttons when read are centered at these valies: 0, 144, 329, 504, 741
+  // my buttons when read are centered at these values (MKR1010): 0, 11, 162, 354, 531, 763
+  // we add approx 50 to those values and check to see if we are close
+  if (adc_key_in > 1000) return btnNONE; // We make this the 1st option for speed reasons since it will be the most likely result
+  if (adc_key_in < 50)   return btnRIGHT;  
+  if (adc_key_in < 250)  return btnUP; 
+  if (adc_key_in < 450)  return btnDOWN; 
+  if (adc_key_in < 650)  return btnLEFT; 
+  if (adc_key_in < 850)  return btnSELECT;  
+
+  return btnNONE;  // when all others fail, return this...
+}
 
 
 void setup() {
@@ -60,6 +92,22 @@ void loop() {
     parser.encode((char)incomingByte);
     Serial.write(incomingByte);   // read it and send it out Serial (USB)
   }
+  int lcd_key = read_LCD_buttons();  // read the buttons
+  switch (lcd_key)               // depending on which button was pushed, we perform an action
+  {
+    case btnUP:               // up
+      {
+        display_screen=1;
+        DOG.clear();  //clear whole display
+        break;
+      }
+    case btnDOWN:               // up
+      {
+        display_screen=0;
+        DOG.clear();  //clear whole display
+        break;
+      }
+  }
 }
 
 /**************************************************************************************
@@ -78,12 +126,18 @@ void onGprmcUpdate(nmea::RmcData const rmc)
   Serial.print(rmc.time_utc.microsecond);
   if(rmc.time_utc.hour>=0)
   {
-    sprintf(buf, "%02i:%02i:%02i",rmc.time_utc.hour,rmc.time_utc.minute,rmc.time_utc.second);
-    DOG.string(0,2,UBUNTUMONO_B_16,buf); // print time in line 2 left
+    if(display_screen==0)
+    {
+      sprintf(buf, "%02i:%02i:%02i",rmc.time_utc.hour,rmc.time_utc.minute,rmc.time_utc.second);
+      DOG.string(0,2,UBUNTUMONO_B_16,buf); // print time in line 2 left
+    }
   }
 
   if (rmc.is_valid)
   {
+    global_longitude=rmc.longitude;
+    global_latitude=rmc.latitude;
+    nav_flag=1;
     Serial.print(" : LON ");
     Serial.print(rmc.longitude);
     Serial.print(" ° | LAT ");
@@ -93,19 +147,39 @@ void onGprmcUpdate(nmea::RmcData const rmc)
     Serial.print(" m/s | HEADING ");
     Serial.print(rmc.course);
     Serial.print(" °");
-    sprintf(buf, "%03.4f-%02.4f",rmc.longitude,rmc.latitude);
-    DOG.string(0,0,UBUNTUMONO_B_16,buf); // print position in line 0 
-    String speed(rmc.speed);
-    DOG.string(70,2,DENSE_NUMBERS_8,speed.c_str()); // print speed in line 2 middle
-    String speedkmh(rmc.speed*3.6);
-    DOG.string(70,3,DENSE_NUMBERS_8,speedkmh.c_str()); // print speed in km/h in line 3 middle
-    String course(rmc.course);
-    DOG.string(100,2,DENSE_NUMBERS_8,course.c_str()); // print speed in line 2 right
+    if(display_screen==0)
+    {
+      sprintf(buf, "%03.4f-%02.4f",rmc.longitude,rmc.latitude);
+      DOG.string(0,0,UBUNTUMONO_B_16,buf); // print position in line 0 
+      String speed(rmc.speed);
+      DOG.string(70,2,DENSE_NUMBERS_8,speed.c_str()); // print speed in line 2 middle
+      String speedkmh(rmc.speed*3.6);
+      DOG.string(70,3,DENSE_NUMBERS_8,speedkmh.c_str()); // print speed in km/h in line 3 middle
+      String course(rmc.course);
+      DOG.string(100,2,DENSE_NUMBERS_8,course.c_str()); // print speed in line 2 right
+    }
+    if(display_screen==1)
+    {
+      sprintf(buf, "%03.6f",rmc.longitude);
+      DOG.string(0,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.6f",rmc.latitude);
+      DOG.string(0,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",rmc.speed);
+      DOG.string(70,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",rmc.speed*3.6);
+      DOG.string(100,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",rmc.course);
+      DOG.string(70,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      
+    }
   }
   else 
   {
-    DOG.string(0,0,UBUNTUMONO_B_16,"data not valid  "); // print "not valid" in line 0 
-    DOG.string(80,2,UBUNTUMONO_B_16,"    "); // print "    " in line 2 right 
+    if(display_screen==0)
+    {
+      DOG.string(0,0,UBUNTUMONO_B_16,"data not valid  "); // print "not valid" in line 0 
+      DOG.string(80,2,UBUNTUMONO_B_16,"    "); // print "    " in line 2 right 
+    }
   }
 
   Serial.println();
