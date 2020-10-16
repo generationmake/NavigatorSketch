@@ -21,8 +21,11 @@
 #include "dense_numbers_8.h"
 #include <ArduinoNmeaParser.h>
 #include <NavPoint.h>
+#include <SPI.h>
+#include <SD.h>
 
 #define BACKLIGHTPIN 10
+#define cardSelect 4
 
 // define some values used by the panel and buttons
 #define btnRIGHT  0
@@ -47,6 +50,7 @@ void onGprmcUpdate(nmea::RmcData const);
 ArduinoNmeaParser parser(onGprmcUpdate);
 DogGraphicDisplay DOG;
 volatile unsigned int display_screen=0;
+volatile bool log_flag=0;
 volatile bool nav_flag=0;
 volatile float global_longitude=0.0;
 volatile float global_latitude=0.0;
@@ -55,6 +59,55 @@ volatile float global_latitude=0.0;
 /**************************************************************************************
  * SETUP/LOOP
  **************************************************************************************/
+void open_log_file(void)
+{
+  if (!SD.begin(cardSelect)) {
+    DOG.string(0,0,UBUNTUMONO_B_16,"SD failed!"); // print time in line 2 left
+    while (true);
+  }
+
+  Serial.println("initialization done.");  
+  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
+    dataFile.println("<gpx version=\"1.1\" creator=\"NavigatorSketch\">");
+    dataFile.println("<trk>");
+    dataFile.println("<trkseg>");
+    dataFile.close();
+  }
+  else
+  {
+    DOG.string(0,0,UBUNTUMONO_B_16,"file failed"); // print time in line 2 left
+    while (true);
+  }
+}
+
+void close_log_file(void)
+{
+  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println("</trkseg>");
+    dataFile.println("</trk>");
+    dataFile.println("</gpx>");
+    dataFile.close();
+  }  
+}
+
+void log_trkpoint(void)
+{
+  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.print("<trkpt lat=\"");
+    dataFile.print(global_latitude, 6);
+    dataFile.print("\" lon=\"");
+    dataFile.print(global_longitude, 6);
+    dataFile.println("\"></trkpt>");
+    dataFile.close();
+  }  
+}
 
 const char *maidenhead(float lon, float lat)
 {
@@ -106,14 +159,14 @@ void loop() {
   while (Serial1.available()) {
     int incomingByte=Serial1.read();
     parser.encode((char)incomingByte);
-    Serial.write(incomingByte);   // read it and send it out Serial (USB)
+//    Serial.write(incomingByte);   // read it and send it out Serial (USB)
   }
   int lcd_key = read_LCD_buttons();  // read the buttons
   switch (lcd_key)               // depending on which button was pushed, we perform an action
   {
     case btnUP:               // up
       {
-        if(display_screen<2) display_screen++;
+        if(display_screen<3) display_screen++;
         else display_screen=0;
         DOG.clear();  //clear whole display
         delay(300);
@@ -122,7 +175,7 @@ void loop() {
     case btnDOWN:               // down
       {
         if(display_screen>0) display_screen--;
-        else display_screen=3;
+        else display_screen=4;
         DOG.clear();  //clear whole display
         delay(300);
         break;
@@ -134,6 +187,25 @@ void loop() {
           dest.setLatitude(global_latitude);
           dest.setLongitude(global_longitude);
         }
+        if(display_screen==3)
+        {
+          log_flag=1;
+          open_log_file();
+          DOG.string(0,2,UBUNTUMONO_B_16,"LOG started"); // print time in line 2 left
+        }
+        break;
+      }
+    case btnLEFT:               // down
+      {
+        if(display_screen==3)
+        {
+          if(log_flag==1)
+          {
+            log_flag=0;
+            close_log_file();
+            DOG.string(0,2,UBUNTUMONO_B_16,"LOG stopped"); // print time in line 2 left
+          }
+        }
         break;
       }
   }
@@ -141,6 +213,13 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
+    if(log_flag==1) log_trkpoint();
+    if(display_screen==3)
+    {
+       DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
+       if(log_flag==1) DOG.string(0,2,UBUNTUMONO_B_16,"enabled    ");    
+       else DOG.string(0,2,UBUNTUMONO_B_16,"disabled   ");    
+    }
     if(display_screen==2)
     {
        DOG.string(70,0,UBUNTUMONO_B_16,maidenhead(global_longitude,global_latitude));    
