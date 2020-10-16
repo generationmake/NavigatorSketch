@@ -18,6 +18,7 @@
 
 #include <DogGraphicDisplay.h>
 #include "ubuntumono_b_16.h"
+#include "dense_numbers_8.h"
 #include <ArduinoNmeaParser.h>
 
 #define BACKLIGHTPIN 10
@@ -95,7 +96,11 @@ void onGprmcUpdate(nmea::RmcData const rmc)
     sprintf(buf, "%03.4f-%02.4f",rmc.longitude,rmc.latitude);
     DOG.string(0,0,UBUNTUMONO_B_16,buf); // print position in line 0 
     String speed(rmc.speed);
-    DOG.string(80,2,UBUNTUMONO_B_16,speed.c_str()); // print speed in line 2 right
+    DOG.string(70,2,DENSE_NUMBERS_8,speed.c_str()); // print speed in line 2 middle
+    String speedkmh(rmc.speed*3.6);
+    DOG.string(70,3,DENSE_NUMBERS_8,speedkmh.c_str()); // print speed in km/h in line 3 middle
+    String course(rmc.course);
+    DOG.string(100,2,DENSE_NUMBERS_8,course.c_str()); // print speed in line 2 right
   }
   else 
   {
