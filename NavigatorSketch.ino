@@ -9,7 +9,7 @@
   used libraries:
   DogGraphicDisplay https://github.com/generationmake/DogGraphicDisplay
   ArduinoNmeaParser https://github.com/107-systems/107-Arduino-NMEA-Parser
-  
+  NavPoint https://github.com/wuehr1999/NavigationOnArduino
 
 ******************************************************************************/
 /**************************************************************************************
@@ -20,6 +20,7 @@
 #include "ubuntumono_b_16.h"
 #include "dense_numbers_8.h"
 #include <ArduinoNmeaParser.h>
+#include <NavPoint.h>
 
 #define BACKLIGHTPIN 10
 
@@ -87,6 +88,8 @@ void setup() {
 }
 
 void loop() {
+  static NavPoint dest(48.995796, 12.837936);
+
   while (Serial1.available()) {
     int incomingByte=Serial1.read();
     parser.encode((char)incomingByte);
@@ -101,12 +104,42 @@ void loop() {
         DOG.clear();  //clear whole display
         break;
       }
-    case btnDOWN:               // up
+    case btnDOWN:               // down
       {
         display_screen=0;
         DOG.clear();  //clear whole display
         break;
       }
+    case btnRIGHT:               // down
+      {
+        if(display_screen==1)
+        {
+          dest.setLatitude(global_latitude);
+          dest.setLongitude(global_longitude);
+        }
+        break;
+      }
+  }
+  if(nav_flag)
+  {
+    char buf[30];
+    nav_flag=0;
+    if(display_screen==1)
+    {
+      NavPoint p2(global_latitude, global_longitude);
+      sprintf(buf, "%03.6f",dest.getLongitude());
+      DOG.string(0,2,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.6f",dest.getLatitude());
+      DOG.string(0,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+      // distance
+      float distance = dest.calculateDistance(p2);
+      // bearing
+      float bearing = dest.calculateBearing(p2);
+      sprintf(buf, "%03.6f",bearing);
+      DOG.string(70,2,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.6f",distance);
+      DOG.string(70,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+    }
   }
 }
 
