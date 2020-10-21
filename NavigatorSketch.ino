@@ -54,38 +54,54 @@ volatile bool log_flag=0;
 volatile bool nav_flag=0;
 volatile float global_longitude=0.0;
 volatile float global_latitude=0.0;
+volatile float global_speed=0.0;
+volatile float global_course=0.0;
+char filename[]="log00.gpx";
 
 
 /**************************************************************************************
  * SETUP/LOOP
  **************************************************************************************/
-void open_log_file(void)
+int open_log_file(void)
 {
+  uint8_t i=0;
   if (!SD.begin(cardSelect)) {
     DOG.string(0,0,UBUNTUMONO_B_16,"SD failed!"); // print time in line 2 left
     while (true);
   }
 
   Serial.println("initialization done.");  
-  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
-    dataFile.println("<gpx version=\"1.1\" creator=\"NavigatorSketch\">");
-    dataFile.println("<trk>");
-    dataFile.println("<trkseg>");
-    dataFile.close();
-  }
-  else
+  for (i = 0; i < 100; i++)
   {
-    DOG.string(0,0,UBUNTUMONO_B_16,"file failed"); // print time in line 2 left
-    while (true);
+    filename[3] = i/10 + '0';
+    filename[4] = i%10 + '0';
+
+    if(!SD.exists(filename))
+    {
+      File dataFile = SD.open(filename, FILE_WRITE);
+      // if the file is available, write to it:
+      if (dataFile) {
+        dataFile.println("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>");
+        dataFile.println("<gpx version=\"1.1\" creator=\"NavigatorSketch\">");
+        dataFile.println("<trk>");
+        dataFile.println("<trkseg>");
+        dataFile.close();
+      }
+      else
+      {
+        DOG.string(0,0,UBUNTUMONO_B_16,"file failed"); // print time in line 2 left
+        while (true);
+      }
+      break;
+    }
   }
+  if(i==100) return -1;
+  else return 0;
 }
 
 void close_log_file(void)
 {
-  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
+  File dataFile = SD.open(filename, FILE_WRITE);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.println("</trkseg>");
@@ -95,16 +111,20 @@ void close_log_file(void)
   }  
 }
 
-void log_trkpoint(void)
+void log_trkpoint(float speed, float course)
 {
-  File dataFile = SD.open("datalog.gpx", FILE_WRITE);
+  File dataFile = SD.open(filename, FILE_WRITE);
   // if the file is available, write to it:
   if (dataFile) {
     dataFile.print("<trkpt lat=\"");
     dataFile.print(global_latitude, 6);
     dataFile.print("\" lon=\"");
     dataFile.print(global_longitude, 6);
-    dataFile.println("\"></trkpt>");
+    dataFile.print("\"><speed>");
+    if(speed!=NULL) dataFile.print(speed);
+    dataFile.print("</speed><course>");
+    if(course!=NULL) dataFile.print(course);
+    dataFile.println("</course></trkpt>");
     dataFile.close();
   }  
 }
@@ -189,9 +209,11 @@ void loop() {
         }
         if(display_screen==3)
         {
-          log_flag=1;
-          open_log_file();
-          DOG.string(0,2,UBUNTUMONO_B_16,"LOG started"); // print time in line 2 left
+          if(log_flag==0)
+          {
+            if(open_log_file()>=0) log_flag=1;
+            DOG.string(0,2,UBUNTUMONO_B_16,"LOG started"); // print time in line 2 left
+          }
         }
         break;
       }
@@ -213,7 +235,7 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
-    if(log_flag==1) log_trkpoint();
+    if(log_flag==1) log_trkpoint(global_speed,global_course);
     if(display_screen==3)
     {
        DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
@@ -271,6 +293,8 @@ void onGprmcUpdate(nmea::RmcData const rmc)
   {
     global_longitude=rmc.longitude;
     global_latitude=rmc.latitude;
+    global_speed=rmc.speed;
+    global_course=rmc.course;
     nav_flag=1;
     Serial.print(" : LON ");
     Serial.print(rmc.longitude);
