@@ -142,8 +142,8 @@ void loop() {
         {
           if(logger.is_enabled()==0)
           {
-            logger.open_log_file();
-            DOG.string(0,2,UBUNTUMONO_B_16,"LOG started"); // print time in line 2 left
+            if(logger.open_log_file()<0) DOG.string(0,2,UBUNTUMONO_B_16,"LOG error!"); // print time in line 2 left
+            else DOG.string(0,2,UBUNTUMONO_B_16,"LOG started"); // print time in line 2 left
           }
         }
         break;

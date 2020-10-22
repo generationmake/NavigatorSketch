@@ -37,8 +37,7 @@ int GpxLogger::open_log_file(void)
 {
   uint8_t i=0;
   if (!SD.begin(GpxLogger::cardSelect)) {
-//    DOG.string(0,0,UBUNTUMONO_B_16,"SD failed!"); // print time in line 2 left
-    while (true);
+    return -3;  // error SD card
   }
 
   Serial.println("initialization done.");  
@@ -61,8 +60,7 @@ int GpxLogger::open_log_file(void)
       }
       else
       {
-//        DOG.string(0,0,UBUNTUMONO_B_16,"file failed"); // print time in line 2 left
-        while (true);
+        return -2;    // error file
       }
       break;
     }
@@ -73,33 +71,39 @@ int GpxLogger::open_log_file(void)
 
 void GpxLogger::close_log_file(void)
 {
-  File dataFile = SD.open(GpxLogger::filename, FILE_WRITE);
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println("</trkseg>");
-    dataFile.println("</trk>");
-    dataFile.println("</gpx>");
-    dataFile.close();
-  }  
-  GpxLogger::log_flag=0;
+  if(log_flag)
+  {
+    File dataFile = SD.open(GpxLogger::filename, FILE_WRITE);
+    // if the file is available, write to it:
+    if (dataFile) {
+      dataFile.println("</trkseg>");
+      dataFile.println("</trk>");
+      dataFile.println("</gpx>");
+      dataFile.close();
+    }  
+    GpxLogger::log_flag=0;
+  }
 }
 
 void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float course)
 {
-  File dataFile = SD.open(GpxLogger::filename, FILE_WRITE);
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.print("<trkpt lat=\"");
-    dataFile.print(latitude, 6);
-    dataFile.print("\" lon=\"");
-    dataFile.print(longitude, 6);
-    dataFile.print("\"><speed>");
-    if(speed!=NULL) dataFile.print(speed);
-    dataFile.print("</speed><course>");
-    if(course!=NULL) dataFile.print(course);
-    dataFile.println("</course></trkpt>");
-    dataFile.close();
-  }  
+  if(log_flag)
+  {
+    File dataFile = SD.open(GpxLogger::filename, FILE_WRITE);
+    // if the file is available, write to it:
+    if (dataFile) {
+      dataFile.print("<trkpt lat=\"");
+      dataFile.print(latitude, 6);
+      dataFile.print("\" lon=\"");
+      dataFile.print(longitude, 6);
+      dataFile.print("\"><speed>");
+      if(!isnan(speed)) dataFile.print(speed);
+      dataFile.print("</speed><course>");
+      if(!isnan(course)) dataFile.print(course);
+      dataFile.println("</course></trkpt>");
+      dataFile.close();
+    }  
+  }
 }
 
 bool GpxLogger::is_enabled(void)
