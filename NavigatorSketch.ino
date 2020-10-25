@@ -168,9 +168,14 @@ void loop() {
     if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course);
     if(display_screen==3)
     {
-       DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
-       if(logger.is_enabled()==1) DOG.string(0,2,UBUNTUMONO_B_16,"enabled    ");    
-       else DOG.string(0,2,UBUNTUMONO_B_16,"disabled   ");    
+      DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
+      if(logger.is_enabled()==1) 
+      {
+        sprintf(buf, "%04d",logger.num_logs());
+        DOG.string(100,0,UBUNTUMONO_B_16,buf); // print position in line 0 
+        DOG.string(0,2,UBUNTUMONO_B_16,"enabled    ");    
+      }
+      else DOG.string(0,2,UBUNTUMONO_B_16,"disabled   ");    
     }
     if(display_screen==2)
     {

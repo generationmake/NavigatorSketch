@@ -23,6 +23,8 @@ Arduino begin function. Forward data to initialize function
 void GpxLogger::begin() 
 {
   GpxLogger::cardSelect=4;
+  GpxLogger::log_flag=0;
+  GpxLogger::count_logs=0;
 }
 
 /*-----------------------------
@@ -66,7 +68,11 @@ int GpxLogger::open_log_file(void)
     }
   }
   if(i==100) return -1;
-  else return 0;
+  else 
+  {
+    GpxLogger::count_logs=0;
+    return 0;
+  }
 }
 
 void GpxLogger::close_log_file(void)
@@ -102,6 +108,7 @@ void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float
       if(!isnan(course)) dataFile.print(course);
       dataFile.println("</course></trkpt>");
       dataFile.close();
+      GpxLogger::count_logs++;
     }  
   }
 }
@@ -109,4 +116,9 @@ void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float
 bool GpxLogger::is_enabled(void)
 {
   return GpxLogger::log_flag;
+}
+
+int GpxLogger::num_logs(void)
+{
+  return GpxLogger::count_logs;
 }
