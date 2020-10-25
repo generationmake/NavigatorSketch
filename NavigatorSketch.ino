@@ -24,6 +24,7 @@
 #include "gpxlogger.h"
 
 #define BACKLIGHTPIN 10
+#define VBATPIN A7
 
 // define some values used by the panel and buttons
 #define btnRIGHT  0
@@ -117,7 +118,7 @@ void loop() {
   {
     case btnUP:               // up
       {
-        if(display_screen<3) display_screen++;
+        if(display_screen<4) display_screen++;
         else display_screen=0;
         DOG.clear();  //clear whole display
         delay(300);
@@ -166,6 +167,16 @@ void loop() {
     char buf[30];
     nav_flag=0;
     if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course);
+    if(display_screen==4)
+    {
+      DOG.string(0,0,UBUNTUMONO_B_16,"Battery");
+      float measuredvbat = analogRead(VBATPIN);
+      measuredvbat *= 2;    // we divided by 2, so multiply back
+      measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
+      measuredvbat /= 1024; // convert to voltage
+      sprintf(buf, "%1.2f V",measuredvbat);
+      DOG.string(80,0,UBUNTUMONO_B_16,buf); // print position in line 0 
+    }
     if(display_screen==3)
     {
       DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
