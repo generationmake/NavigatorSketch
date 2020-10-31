@@ -95,8 +95,8 @@ void setup() {
   pinMode(BACKLIGHTPIN,  OUTPUT);   // set backlight pin to output
   digitalWrite(BACKLIGHTPIN,  HIGH);  // enable backlight pin
 
-  Serial.begin(9600);
-  Serial1.begin(9600);
+  Serial.begin(115200);
+  Serial1.begin(9600);   // receiver
 
   DOG.begin(A1,0,0,A3,A2,DOGM132);   //CS = A1, 0,0= use Hardware SPI, A0 = A3, RESET = A2, EA DOGM132-5 (=132x32 dots)
 
