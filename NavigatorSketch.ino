@@ -190,7 +190,14 @@ void loop() {
     }
     if(display_screen==2)
     {
-       DOG.string(70,0,UBUNTUMONO_B_16,maidenhead(global_longitude,global_latitude));    
+      DOG.string(70,0,UBUNTUMONO_B_16,maidenhead(global_longitude,global_latitude));    
+      if(logger.is_enabled()==1) 
+      {
+        sprintf(buf, "%04d",logger.num_logs());
+        DOG.string(112,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+        DOG.string(70,3,DENSE_NUMBERS_8,"enabled 1");    
+      }
+      else DOG.string(70,3,DENSE_NUMBERS_8,"disabled0");    
     }
     if(display_screen==1)
     {
@@ -232,6 +239,11 @@ void onGprmcUpdate(nmea::RmcData const rmc)
     {
       sprintf(buf, "%02i:%02i:%02i",rmc.time_utc.hour,rmc.time_utc.minute,rmc.time_utc.second);
       DOG.string(0,2,UBUNTUMONO_B_16,buf); // print time in line 2 left
+    }
+    if((display_screen==2))
+    {
+      sprintf(buf, "%02i.%02i.%02i",rmc.date.day,rmc.date.month,rmc.date.year);
+      DOG.string(70,2,DENSE_NUMBERS_8,buf); // print time in line 2 left
     }
   }
 
