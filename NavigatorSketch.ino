@@ -102,6 +102,7 @@ void setup() {
 
   DOG.clear();  //clear whole display
   DOG.string(0,0,UBUNTUMONO_B_16,"data not valid"); // print "not valid" in line 0 
+  DOG.createCanvas(32, 32, 100, 0, 1);  // Canvas in buffered mode
   logger.begin();
 }
 
@@ -118,7 +119,7 @@ void loop() {
   {
     case btnUP:               // up
       {
-        if(display_screen<4) display_screen++;
+        if(display_screen<5) display_screen++;
         else display_screen=0;
         DOG.clear();  //clear whole display
         delay(300);
@@ -127,7 +128,7 @@ void loop() {
     case btnDOWN:               // down
       {
         if(display_screen>0) display_screen--;
-        else display_screen=4;
+        else display_screen=5;
         DOG.clear();  //clear whole display
         delay(300);
         break;
@@ -167,7 +168,40 @@ void loop() {
     char buf[30];
     nav_flag=0;
     if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course);
-    if(display_screen==4)
+    if(display_screen==5) // course with arrow
+    {
+      NavPoint pos(global_latitude, global_longitude);
+
+      // distance
+      float distance = pos.calculateDistance(dest);
+      // bearing
+      float bearing = pos.calculateBearing(dest);
+      if(bearing<0) bearing+=360.0; // bring bearing to 0 to 360 degrees, just like in NMEA dataset
+
+      sprintf(buf, "%05.2f",distance);
+      DOG.string(0,2,UBUNTUMONO_B_16,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",global_speed*3.6);
+      DOG.string(0,0,UBUNTUMONO_B_16,buf); // print position in line 0 
+
+      float deltaangle = pos.calculateDeltaAngle(global_course,dest);
+      const int circle2_x=16;
+      const int circle2_y=16;
+      const int circle2_radius=16;
+      float diff2_x=(circle2_radius-1)*sin(deltaangle*DEG_TO_RAD);
+      float diff2_y=(circle2_radius-1)*cos(deltaangle*DEG_TO_RAD);
+      DOG.clearCanvas();
+      DOG.drawCircle(circle2_x, circle2_y, circle2_radius, false);
+      DOG.drawArrow(circle2_x-diff2_x, circle2_y+diff2_y, circle2_x+diff2_x, circle2_y-diff2_y);
+      DOG.flushCanvas();
+
+      sprintf(buf, "%03.2f",bearing);
+      DOG.string(70,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",global_course);
+      DOG.string(70,2,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.2f",deltaangle);
+      DOG.string(70,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+    }
+    if(display_screen==4) // battery voltage
     {
       DOG.string(0,0,UBUNTUMONO_B_16,"Battery");
       float measuredvbat = analogRead(VBATPIN);
@@ -177,7 +211,7 @@ void loop() {
       sprintf(buf, "%1.2f V",measuredvbat);
       DOG.string(80,0,UBUNTUMONO_B_16,buf); // print position in line 0 
     }
-    if(display_screen==3)
+    if(display_screen==3) // logging
     {
       DOG.string(0,0,UBUNTUMONO_B_16,"LOG status");    
       if(logger.is_enabled()==1) 
@@ -188,7 +222,7 @@ void loop() {
       }
       else DOG.string(0,2,UBUNTUMONO_B_16,"disabled   ");    
     }
-    if(display_screen==2)
+    if(display_screen==2) // maidenhead
     {
       DOG.string(70,0,UBUNTUMONO_B_16,maidenhead(global_longitude,global_latitude));    
       if(logger.is_enabled()==1) 
@@ -199,7 +233,7 @@ void loop() {
       }
       else DOG.string(70,3,DENSE_NUMBERS_8,"disabled0");    
     }
-    if(display_screen==1)
+    if(display_screen==1) // destination setting
     {
       NavPoint pos(global_latitude, global_longitude);
       sprintf(buf, "%03.6f",dest.getLongitude());
