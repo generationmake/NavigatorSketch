@@ -183,23 +183,27 @@ void loop() {
       sprintf(buf, "%03.2f",global_speed*3.6);
       DOG.string(0,0,UBUNTUMONO_B_16,buf); // print position in line 0 
 
-      float deltaangle = pos.calculateDeltaAngle(global_course,dest);
       const int circle2_x=16;
       const int circle2_y=16;
       const int circle2_radius=16;
-      float diff2_x=(circle2_radius-1)*sin(deltaangle*DEG_TO_RAD);
-      float diff2_y=(circle2_radius-1)*cos(deltaangle*DEG_TO_RAD);
       DOG.clearCanvas();
       DOG.drawCircle(circle2_x, circle2_y, circle2_radius, false);
-      DOG.drawArrow(circle2_x-diff2_x, circle2_y+diff2_y, circle2_x+diff2_x, circle2_y-diff2_y);
+      if(!isnan(global_course))
+      {
+        float deltaangle = pos.calculateDeltaAngle(global_course,dest);
+        float diff2_x=(circle2_radius-1)*sin(deltaangle*DEG_TO_RAD);
+        float diff2_y=(circle2_radius-1)*cos(deltaangle*DEG_TO_RAD);
+        DOG.drawArrow(circle2_x-diff2_x, circle2_y+diff2_y, circle2_x+diff2_x, circle2_y-diff2_y);
+        sprintf(buf, "%03.2f",deltaangle);
+        DOG.string(70,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      }
+      else DOG.drawCross(16,16,8,8);
       DOG.flushCanvas();
 
       sprintf(buf, "%03.2f",bearing);
       DOG.string(70,3,DENSE_NUMBERS_8,buf); // print position in line 0 
       sprintf(buf, "%03.2f",global_course);
       DOG.string(70,2,DENSE_NUMBERS_8,buf); // print position in line 0 
-      sprintf(buf, "%03.2f",deltaangle);
-      DOG.string(70,1,DENSE_NUMBERS_8,buf); // print position in line 0 
     }
     if(display_screen==4) // battery voltage
     {
