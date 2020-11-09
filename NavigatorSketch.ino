@@ -40,13 +40,13 @@
  * FUNCTION DECLARATION
  **************************************************************************************/
 
-void onGprmcUpdate(nmea::RmcData const);
+void onRmcUpdate(nmea::RmcData const);
 
 /**************************************************************************************
  * GLOBAL VARIABLES
  **************************************************************************************/
 
-ArduinoNmeaParser parser(onGprmcUpdate);
+ArduinoNmeaParser parser(onRmcUpdate);
 DogGraphicDisplay DOG;
 GpxLogger logger;
 volatile unsigned int display_screen=0;
@@ -96,7 +96,8 @@ void setup() {
   digitalWrite(BACKLIGHTPIN,  HIGH);  // enable backlight pin
 
   Serial.begin(115200);
-  Serial1.begin(9600);   // receiver
+  Serial1.begin(9600);   // receiver u-blox NEO-7M NEO-6M
+//  Serial1.begin(38400);   // receiver u-blox NEO-M8N
 
   DOG.begin(A1,0,0,A3,A2,DOGM132);   //CS = A1, 0,0= use Hardware SPI, A0 = A3, RESET = A2, EA DOGM132-5 (=132x32 dots)
 
@@ -261,9 +262,15 @@ void loop() {
  * FUNCTION DEFINITION
  **************************************************************************************/
 
-void onGprmcUpdate(nmea::RmcData const rmc)
+void onRmcUpdate(nmea::RmcData const rmc)
 {
   char buf[30];
+  if      (rmc.source == nmea::RmcSource::GPS)     Serial.print("GPS");
+  else if (rmc.source == nmea::RmcSource::GLONASS) Serial.print("GLONASS");
+  else if (rmc.source == nmea::RmcSource::Galileo) Serial.print("Galileo");
+  else if (rmc.source == nmea::RmcSource::GNSS)    Serial.print("GNSS");
+
+  Serial.print(" ");
   Serial.print(rmc.time_utc.hour);
   Serial.print(":");
   Serial.print(rmc.time_utc.minute);
