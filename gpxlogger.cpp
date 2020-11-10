@@ -91,7 +91,7 @@ void GpxLogger::close_log_file(void)
   }
 }
 
-void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float course)
+void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float course, time_t timestamp)
 {
   if(log_flag)
   {

@@ -22,6 +22,7 @@
 #include <ArduinoNmeaParser.h>
 #include <NavPoint.h>
 #include "gpxlogger.h"
+#include <TimeLib.h>
 
 #define BACKLIGHTPIN 10
 #define VBATPIN A7
@@ -55,7 +56,7 @@ volatile float global_longitude=0.0;
 volatile float global_latitude=0.0;
 volatile float global_speed=0.0;
 volatile float global_course=0.0;
-
+volatile time_t global_timestamp=0;
 
 /**************************************************************************************
  * SETUP/LOOP
@@ -168,7 +169,7 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
-    if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course);
+    if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course,global_timestamp);
     if(display_screen==5) // course with arrow
     {
       NavPoint pos(global_latitude, global_longitude);
@@ -265,6 +266,9 @@ void loop() {
 void onRmcUpdate(nmea::RmcData const rmc)
 {
   char buf[30];
+
+//  time_t const posix_timestamp = nmea::util::toPosixTimestamp(rmc.date, rmc.time);
+  time_t posix_timestamp = nmea::util::toPosixTimestamp(rmc.date, rmc.time_utc);
   if      (rmc.source == nmea::RmcSource::GPS)     Serial.print("GPS");
   else if (rmc.source == nmea::RmcSource::GLONASS) Serial.print("GLONASS");
   else if (rmc.source == nmea::RmcSource::Galileo) Serial.print("Galileo");
@@ -278,8 +282,23 @@ void onRmcUpdate(nmea::RmcData const rmc)
   Serial.print(rmc.time_utc.second);
   Serial.print(".");
   Serial.print(rmc.time_utc.microsecond);
+  Serial.print("-");
+  Serial.println((unsigned int)posix_timestamp);
+  Serial.print(year(posix_timestamp));
+  Serial.print("-");
+  Serial.print(month(posix_timestamp));
+  Serial.print("-");
+  Serial.print(day(posix_timestamp));
+  Serial.print("T");
+  Serial.print(hour(posix_timestamp));
+  Serial.print(":");
+  Serial.print(minute(posix_timestamp));
+  Serial.print(":");
+  Serial.print(second(posix_timestamp));
+  Serial.println("Z");
   if(rmc.time_utc.hour>=0)
   {
+    global_timestamp=posix_timestamp;
     if((display_screen==0)||(display_screen==2))
     {
       sprintf(buf, "%02i:%02i:%02i",rmc.time_utc.hour,rmc.time_utc.minute,rmc.time_utc.second);
