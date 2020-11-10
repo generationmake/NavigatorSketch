@@ -267,7 +267,7 @@ void onRmcUpdate(nmea::RmcData const rmc)
 {
   char buf[30];
 
-  time_t posix_timestamp = nmea::util::toPosixTimestamp(rmc.date, rmc.time_utc);
+  time_t posix_timestamp = nmea::toPosixTimestamp(rmc.date, rmc.time_utc);
   if      (rmc.source == nmea::RmcSource::GPS)     Serial.print("GPS");
   else if (rmc.source == nmea::RmcSource::GLONASS) Serial.print("GLONASS");
   else if (rmc.source == nmea::RmcSource::Galileo) Serial.print("Galileo");
