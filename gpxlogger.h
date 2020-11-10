@@ -13,6 +13,7 @@ class GpxLogger
     void log_trkpoint(float latitude, float longitude, float speed, float course, time_t timestamp);
     bool is_enabled(void);
     int num_logs(void);
+    const char *timestamp_iso8601(time_t timestamp);
 
   private:
     bool log_flag=0;

@@ -267,7 +267,6 @@ void onRmcUpdate(nmea::RmcData const rmc)
 {
   char buf[30];
 
-//  time_t const posix_timestamp = nmea::util::toPosixTimestamp(rmc.date, rmc.time);
   time_t posix_timestamp = nmea::util::toPosixTimestamp(rmc.date, rmc.time_utc);
   if      (rmc.source == nmea::RmcSource::GPS)     Serial.print("GPS");
   else if (rmc.source == nmea::RmcSource::GLONASS) Serial.print("GLONASS");
@@ -281,21 +280,8 @@ void onRmcUpdate(nmea::RmcData const rmc)
   Serial.print(":");
   Serial.print(rmc.time_utc.second);
   Serial.print(".");
-  Serial.print(rmc.time_utc.microsecond);
-  Serial.print("-");
-  Serial.println((unsigned int)posix_timestamp);
-  Serial.print(year(posix_timestamp));
-  Serial.print("-");
-  Serial.print(month(posix_timestamp));
-  Serial.print("-");
-  Serial.print(day(posix_timestamp));
-  Serial.print("T");
-  Serial.print(hour(posix_timestamp));
-  Serial.print(":");
-  Serial.print(minute(posix_timestamp));
-  Serial.print(":");
-  Serial.print(second(posix_timestamp));
-  Serial.println("Z");
+  Serial.println(rmc.time_utc.microsecond);
+  Serial.println(logger.timestamp_iso8601(posix_timestamp));
   if(rmc.time_utc.hour>=0)
   {
     global_timestamp=posix_timestamp;

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
+#include <TimeLib.h>
 #include "gpxlogger.h"
 /*-----------------------------
 constructor for class, not needed by Arduino but for complete class. does not do anything.
@@ -102,7 +103,9 @@ void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float
       dataFile.print(latitude, 6);
       dataFile.print("\" lon=\"");
       dataFile.print(longitude, 6);
-      dataFile.print("\"><speed>");
+      dataFile.print("\"><time>");
+      dataFile.print(timestamp_iso8601(timestamp));
+      dataFile.print("</time><speed>");
       if(!isnan(speed)) dataFile.print(speed);
       dataFile.print("</speed><course>");
       if(!isnan(course)) dataFile.print(course);
@@ -121,4 +124,24 @@ bool GpxLogger::is_enabled(void)
 int GpxLogger::num_logs(void)
 {
   return GpxLogger::count_logs;
+}
+
+const char *GpxLogger::timestamp_iso8601(time_t timestamp)
+{
+  static char iso8601[21]="0000-00-00T00:00:00Z";  // create buffer
+  iso8601[0]=(year(timestamp)/1000)%10+48;
+  iso8601[1]=(year(timestamp)/100)%10+48;
+  iso8601[2]=(year(timestamp)/10)%10+48;
+  iso8601[3]=year(timestamp)%10+48;
+  iso8601[5]=(month(timestamp)/10)%10+48;
+  iso8601[6]=month(timestamp)%10+48;
+  iso8601[8]=(day(timestamp)/10)%10+48;
+  iso8601[9]=day(timestamp)%10+48;
+  iso8601[11]=(hour(timestamp)/10)%10+48;
+  iso8601[12]=hour(timestamp)%10+48;
+  iso8601[14]=(minute(timestamp)/10)%10+48;
+  iso8601[15]=minute(timestamp)%10+48;
+  iso8601[17]=(second(timestamp)/10)%10+48;
+  iso8601[18]=second(timestamp)%10+48;
+  return iso8601;
 }
