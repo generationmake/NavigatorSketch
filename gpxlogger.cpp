@@ -92,7 +92,7 @@ void GpxLogger::close_log_file(void)
   }
 }
 
-void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float course, time_t timestamp)
+void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float course, float height, time_t timestamp)
 {
   if(log_flag)
   {
@@ -105,7 +105,9 @@ void GpxLogger::log_trkpoint(float latitude, float longitude, float speed, float
       dataFile.print(longitude, 6);
       dataFile.print("\"><time>");
       dataFile.print(timestamp_iso8601(timestamp));
-      dataFile.print("</time><speed>");
+      dataFile.print("</time><ele>");
+      if(!isnan(height)) dataFile.print(height);
+      dataFile.print("</ele><speed>");
       if(!isnan(speed)) dataFile.print(speed);
       dataFile.print("</speed><course>");
       if(!isnan(course)) dataFile.print(course);

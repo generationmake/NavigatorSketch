@@ -178,7 +178,7 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
-    if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course,global_timestamp);
+    if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course,gga_height,global_timestamp);
     if(display_screen==6) // GGA values
     {
       sprintf(buf, "%03.6f",gga_longitude);
