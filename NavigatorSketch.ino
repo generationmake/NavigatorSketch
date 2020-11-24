@@ -58,6 +58,14 @@ volatile float global_latitude=0.0;
 volatile float global_speed=0.0;
 volatile float global_course=0.0;
 volatile time_t global_timestamp=0;
+volatile float gga_longitude=0.0;
+volatile float gga_latitude=0.0;
+volatile int gga_num_satellites=0;
+volatile float gga_hdop=0.0;
+volatile float gga_altitude=0.0;
+volatile float gga_height=0.0;
+volatile float gga_geoidal_separation=0.0;
+
 
 /**************************************************************************************
  * SETUP/LOOP
@@ -122,7 +130,7 @@ void loop() {
   {
     case btnUP:               // up
       {
-        if(display_screen<5) display_screen++;
+        if(display_screen<7) display_screen++;
         else display_screen=0;
         DOG.clear();  //clear whole display
         delay(300);
@@ -131,7 +139,7 @@ void loop() {
     case btnDOWN:               // down
       {
         if(display_screen>0) display_screen--;
-        else display_screen=5;
+        else display_screen=7;
         DOG.clear();  //clear whole display
         delay(300);
         break;
@@ -171,6 +179,23 @@ void loop() {
     char buf[30];
     nav_flag=0;
     if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course,global_timestamp);
+    if(display_screen==6) // GGA values
+    {
+      sprintf(buf, "%03.6f",gga_longitude);
+      DOG.string(0,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.6f",gga_latitude);
+      DOG.string(0,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%05.2f",gga_height);
+      DOG.string(0,2,UBUNTUMONO_B_16,buf); // print position in line 0 
+      sprintf(buf, "%02i",gga_num_satellites);
+      DOG.string(70,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%f  ",gga_hdop);
+      DOG.string(70,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%f  ",gga_altitude);
+      DOG.string(70,2,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%f  ",gga_geoidal_separation);
+      DOG.string(70,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+    }
     if(display_screen==5) // course with arrow
     {
       NavPoint pos(global_latitude, global_longitude);
@@ -375,6 +400,13 @@ void onGgaUpdate(nmea::GgaData const gga)
 
   if (gga.fix_quality != nmea::FixQuality::Invalid)
   {
+    gga_longitude=gga.longitude;
+    gga_latitude=gga.latitude;
+    gga_num_satellites=gga.num_satellites;
+    gga_hdop=gga.hdop;
+    gga_altitude=gga.altitude;
+    gga_geoidal_separation=gga.geoidal_separation;
+    gga_height=gga_altitude-gga_geoidal_separation;
     Serial.print(" : LON ");
     Serial.print(gga.longitude);
     Serial.print(" ° | LAT ");
