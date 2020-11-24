@@ -22,6 +22,7 @@
 #include <ArduinoNmeaParser.h>
 #include <NavPoint.h>
 #include "gpxlogger.h"
+#include "ringbuffer.h"
 #include <TimeLib.h>
 
 #define BACKLIGHTPIN 10
@@ -51,6 +52,7 @@ void onGgaUpdate(nmea::GgaData const);
 ArduinoNmeaParser parser(onRmcUpdate, onGgaUpdate);
 DogGraphicDisplay DOG;
 GpxLogger logger;
+RingBufferX ring;
 volatile unsigned int display_screen=0;
 volatile bool nav_flag=0;
 volatile float global_longitude=0.0;
@@ -115,6 +117,7 @@ void setup() {
   DOG.string(0,0,UBUNTUMONO_B_16,"data not valid"); // print "not valid" in line 0 
   DOG.createCanvas(32, 32, 100, 0, 1);  // Canvas in buffered mode
   logger.begin();
+  ring.begin();
 }
 
 void loop() {
@@ -178,7 +181,25 @@ void loop() {
   {
     char buf[30];
     nav_flag=0;
+    ring.store(gga_height);
     if(logger.is_enabled()==1) logger.log_trkpoint(global_latitude,global_longitude,global_speed,global_course,gga_height,global_timestamp);
+    if(display_screen==7) // GGA diagram
+    {
+      sprintf(buf, "%03.3f",ring.max());
+      DOG.string(0,0,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.3f",gga_height);
+      DOG.string(0,1,DENSE_NUMBERS_8,buf); // print position in line 0 
+      sprintf(buf, "%03.3f",ring.min());
+      DOG.string(0,3,DENSE_NUMBERS_8,buf); // print position in line 0 
+
+      DOG.clearCanvas();
+      for(int x=0;x<32;x++)
+      {
+        float diff=ring.max()-ring.min();
+        DOG.drawLine(x, 32-(int)((ring.getat(31-x)-ring.min())/diff*32.0), x, 32);
+      }
+      DOG.flushCanvas();
+    }
     if(display_screen==6) // GGA values
     {
       sprintf(buf, "%03.6f",gga_longitude);
